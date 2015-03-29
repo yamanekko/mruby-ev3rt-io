@@ -1,7 +1,7 @@
-mruby-io
+mruby-ev3rt-io
 ========
 
-IO, File module for mruby
+IO, File module for mruby on TOPPERS HRP2/EV3RT
 
 
 ## Implemented methods

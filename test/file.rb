@@ -54,16 +54,6 @@ assert('File.extname') do
   assert_equal '', File.extname('.foo')
 end
 
-assert('IO#flock') do
-  f = File.open $mrbtest_io_rfname
-  assert_equal(f.flock(File::LOCK_SH), 0)
-  assert_equal(f.flock(File::LOCK_UN), 0)
-  assert_equal(f.flock(File::LOCK_EX | File::LOCK_NB), 0)
-  assert_equal(f.flock(File::LOCK_UN), 0)
-  f.close
-  true
-end
-
 assert('File.join') do
   File.join() == "" and
   File.join("a") == "a" and
@@ -96,13 +86,4 @@ assert('File.expand_path') do
 
   assert_equal "/", File.expand_path("../../../..", "/")
   assert_equal "/", File.expand_path(([".."] * 100).join("/"))
-end
-
-assert('File.expand_path (with ENV)') do
-  skip unless Object.const_defined?(:ENV) && ENV['HOME']
-
-  assert_equal ENV['HOME'], File.expand_path("~/"),      "home"
-  assert_equal ENV['HOME'], File.expand_path("~/", "/"), "home with base_dir"
-
-  assert_equal "#{ENV['HOME']}/user", File.expand_path("user", ENV['HOME']), "relative with base_dir"
 end

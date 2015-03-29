@@ -156,10 +156,6 @@ class File < IO
     FileTest.socket?(file)
   end
 
-  def self.symlink?(file)
-    FileTest.symlink?(file)
-  end
-
   def self.zero?(file)
     FileTest.zero?(file)
   end

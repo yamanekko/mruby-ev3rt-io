@@ -11,27 +11,13 @@
 #include "mruby/variable.h"
 #include "mruby/ext/io.h"
 
-#if MRUBY_RELEASE_NO < 10000
-#include "error.h"
-#else
 #include "mruby/error.h"
-#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#if defined(_WIN32) || defined(_WIN64)
-  #include <winsock.h>
-  #include <io.h>
-  #define open  _open
-  #define close _close
-  #define read  _read
-  #define write _write
-  #define lseek _lseek
-#else
-  #include <sys/wait.h>
-  #include <unistd.h>
-#endif
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include <fcntl.h>
 
@@ -43,14 +29,6 @@
 static int mrb_io_modestr_to_flags(mrb_state *mrb, const char *modestr);
 static int mrb_io_flags_to_modenum(mrb_state *mrb, int flags);
 static void fptr_finalize(mrb_state *mrb, struct mrb_io *fptr, int noraise);
-
-#if MRUBY_RELEASE_NO < 10000
-static struct RClass *
-mrb_module_get(mrb_state *mrb, const char *name)
-{
-  return mrb_class_get(mrb, name);
-}
-#endif
 
 static int
 mrb_io_modestr_to_flags(mrb_state *mrb, const char *mode)
@@ -116,34 +94,9 @@ mrb_io_flags_to_modenum(mrb_state *mrb, int flags)
   if (flags & FMODE_CREATE) {
     modenum |= O_CREAT;
   }
-#ifdef O_BINARY
-  if (flags & FMODE_BINMODE) {
-    modenum |= O_BINARY;
-  }
-#endif
-
+  /* ignore O_BINARY */
   return modenum;
 }
-
-#ifndef _WIN32
-static int
-mrb_proc_exec(const char *pname)
-{
-  const char *s;
-  s = pname;
-
-  while (*s == ' ' || *s == '\t' || *s == '\n')
-    s++;
-
-  if (!*s) {
-    errno = ENOENT;
-    return -1;
-  }
-
-  execl("/bin/sh", "sh", "-c", pname, (char *)NULL);
-  return -1;
-}
-#endif
 
 static void
 mrb_io_free(mrb_state *mrb, void *ptr)
@@ -173,121 +126,6 @@ mrb_io_alloc(mrb_state *mrb)
 
 #ifndef NOFILE
 #define NOFILE 64
-#endif
-
-#ifndef _WIN32
-mrb_value
-mrb_io_s_popen(mrb_state *mrb, mrb_value klass)
-{
-  mrb_value cmd, io, result;
-  mrb_value mode = mrb_str_new_cstr(mrb, "r");
-  mrb_value opt  = mrb_hash_new(mrb);
-
-  struct mrb_io *fptr;
-  const char *pname;
-  int pid, flags, fd, write_fd = -1;
-  int pr[2] = { -1, -1 };
-  int pw[2] = { -1, -1 };
-  int doexec;
-  int saved_errno;
-
-  mrb_get_args(mrb, "S|SH", &cmd, &mode, &opt);
-  io = mrb_obj_value(mrb_data_object_alloc(mrb, mrb_class_ptr(klass), NULL, &mrb_io_type));
-
-  pname = mrb_string_value_cstr(mrb, &cmd);
-  flags = mrb_io_modestr_to_flags(mrb, mrb_string_value_cstr(mrb, &mode));
-
-  doexec = (strcmp("-", pname) != 0);
-
-  if ((flags & FMODE_READABLE) && pipe(pr) == -1) {
-    mrb_sys_fail(mrb, "pipe");
-  }
-  if ((flags & FMODE_WRITABLE) && pipe(pw) == -1) {
-    if (pr[0] != -1) close(pr[0]);
-    if (pr[1] != -1) close(pr[1]);
-    mrb_sys_fail(mrb, "pipe");
-  }
-
-  if (!doexec) {
-    // XXX
-    fflush(stdin);
-    fflush(stdout);
-    fflush(stderr);
-  }
-
-  result = mrb_nil_value();
-  switch (pid = fork()) {
-    case 0: /* child */
-      if (flags & FMODE_READABLE) {
-        close(pr[0]);
-        if (pr[1] != 1) {
-          dup2(pr[1], 1);
-          close(pr[1]);
-        }
-      }
-      if (flags & FMODE_WRITABLE) {
-        close(pw[1]);
-        if (pw[0] != 0) {
-          dup2(pw[0], 0);
-          close(pw[0]);
-        }
-      }
-      if (doexec) {
-        for (fd = 3; fd < NOFILE; fd++) {
-          close(fd);
-        }
-        mrb_proc_exec(pname);
-        mrb_raisef(mrb, E_IO_ERROR, "command not found: %S", cmd);
-        _exit(127);
-      }
-      result = mrb_nil_value();
-      break;
-
-    default: /* parent */
-      if ((flags & FMODE_READABLE) && (flags & FMODE_WRITABLE)) {
-        close(pr[1]);
-        fd = pr[0];
-        close(pw[0]);
-        write_fd = pw[1];
-      } else if (flags & FMODE_READABLE) {
-        close(pr[1]);
-        fd = pr[0];
-      } else {
-        close(pw[0]);
-        fd = pw[1];
-      }
-
-      mrb_iv_set(mrb, io, mrb_intern_cstr(mrb, "@buf"), mrb_str_new_cstr(mrb, ""));
-      mrb_iv_set(mrb, io, mrb_intern_cstr(mrb, "@pos"), mrb_fixnum_value(0));
-
-      fptr = mrb_io_alloc(mrb);
-      fptr->fd = fd;
-      fptr->fd2 = write_fd;
-      fptr->pid = pid;
-      fptr->writable = ((flags & FMODE_WRITABLE) != 0);
-      fptr->sync = 0;
-
-      DATA_TYPE(io) = &mrb_io_type;
-      DATA_PTR(io)  = fptr;
-      result = io;
-      break;
-
-    case -1: /* error */
-      saved_errno = errno;
-      if (flags & FMODE_READABLE) {
-        close(pr[0]);
-        close(pr[1]);
-      }
-      if (flags & FMODE_WRITABLE) {
-        close(pw[0]);
-        close(pw[1]);
-      }
-      errno = saved_errno;
-      mrb_sys_fail(mrb, "pipe_open failed.");
-      break;
-  }
-  return result;
-}
 #endif
 
 mrb_value
@@ -755,68 +593,15 @@ mrb_io_fileno(mrb_state *mrb, mrb_value io)
 mrb_value
 mrb_io_close_on_exec_p(mrb_state *mrb, mrb_value io)
 {
-#if defined(F_GETFD) && defined(F_SETFD) && defined(FD_CLOEXEC)
-  struct mrb_io *fptr;
-  int ret;
-  
-  fptr = (struct mrb_io *)mrb_get_datatype(mrb, io, &mrb_io_type);
-  if (fptr->fd < 0) {
-    mrb_raise(mrb, E_IO_ERROR, "closed stream");
-  }
-
-  if (fptr->fd2 >= 0) {
-    if ((ret = fcntl(fptr->fd2, F_GETFD)) == -1) mrb_sys_fail(mrb, "F_GETFD failed");
-    if (!(ret & FD_CLOEXEC)) return mrb_false_value();
-  }
-
-  if ((ret = fcntl(fptr->fd, F_GETFD)) == -1) mrb_sys_fail(mrb, "F_GETFD failed");
-  if (!(ret & FD_CLOEXEC)) return mrb_false_value();
-  return mrb_true_value();
-
-#else
   mrb_raise(mrb, E_NOTIMP_ERROR, "IO#close_on_exec? is not supported on the platform");
   return mrb_false_value();
-#endif
 }
 
 mrb_value
 mrb_io_set_close_on_exec(mrb_state *mrb, mrb_value io)
 {
-#if defined(F_GETFD) && defined(F_SETFD) && defined(FD_CLOEXEC)
-  struct mrb_io *fptr;
-  int flag, ret;
-  mrb_bool b;
-
-  fptr = (struct mrb_io *)mrb_get_datatype(mrb, io, &mrb_io_type);
-  if (fptr->fd < 0) {
-    mrb_raise(mrb, E_IO_ERROR, "closed stream");
-  }
-
-  mrb_get_args(mrb, "b", &b);
-  flag = b ? FD_CLOEXEC : 0;
-
-  if (fptr->fd2 >= 0) {
-    if ((ret = fcntl(fptr->fd2, F_GETFD)) == -1) mrb_sys_fail(mrb, "F_GETFD failed");
-    if ((ret & FD_CLOEXEC) != flag) {
-      ret = (ret & ~FD_CLOEXEC) | flag;
-      ret = fcntl(fptr->fd2, F_SETFD, ret);
-      
-      if (ret == -1) mrb_sys_fail(mrb, "F_SETFD failed");
-    }
-  }
-
-  if ((ret = fcntl(fptr->fd, F_GETFD)) == -1) mrb_sys_fail(mrb, "F_GETFD failed");
-  if ((ret & FD_CLOEXEC) != flag) {
-    ret = (ret & ~FD_CLOEXEC) | flag;
-    ret = fcntl(fptr->fd, F_SETFD, ret);
-    if (ret == -1) mrb_sys_fail(mrb, "F_SETFD failed");
-  }
-
-  return mrb_bool_value(b);
-#else
   mrb_raise(mrb, E_NOTIMP_ERROR, "IO#close_on_exec= is not supported on the platform");
   return mrb_nil_value();
-#endif
 }
 
 mrb_value
@@ -856,10 +641,6 @@ mrb_init_io(mrb_state *mrb)
   MRB_SET_INSTANCE_TT(io, MRB_TT_DATA);
 
   mrb_include_module(mrb, io, mrb_module_get(mrb, "Enumerable")); /* 15.2.20.3 */
-#ifndef _WIN32
-  mrb_define_class_method(mrb, io, "_popen",  mrb_io_s_popen,   MRB_ARGS_ANY());
-  mrb_define_class_method(mrb, io, "_sysclose",  mrb_io_s_sysclose, MRB_ARGS_REQ(1));
-#endif
   mrb_define_class_method(mrb, io, "for_fd",  mrb_io_s_for_fd,   MRB_ARGS_ANY());
   mrb_define_class_method(mrb, io, "select",  mrb_io_s_select,  MRB_ARGS_ANY());
   mrb_define_class_method(mrb, io, "sysopen", mrb_io_s_sysopen, MRB_ARGS_ANY());

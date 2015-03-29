@@ -8,11 +8,7 @@
 #include "mruby/string.h"
 #include "mruby/ext/io.h"
 
-#if MRUBY_RELEASE_NO < 10000
-#include "error.h"
-#else
 #include "mruby/error.h"
-#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -23,26 +19,14 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#if defined(_WIN32) || defined(_WIN64)
-  #define UNLINK _unlink
-  #define GETCWD _getcwd
-  #define CHMOD(a, b) 0
-  #define MAXPATHLEN 1024
- #if !defined(PATH_MAX)
-  #define PATH_MAX _MAX_PATH
- #endif
-  #define realpath(N,R) _fullpath((R),(N),_MAX_PATH)
-  #include <direct.h>
-#else
-  #include <unistd.h>
-  #define UNLINK unlink
-  #define GETCWD getcwd
-  #define CHMOD(a, b) chmod(a,b)
-  #include <sys/file.h>
-  #include <libgen.h>
-  #include <sys/param.h>
-  #include <pwd.h>
-#endif
+#include <unistd.h>
+#define UNLINK unlink
+#define GETCWD getcwd
+#define CHMOD(a, b) chmod(a,b)
+#include <sys/file.h>
+#include <libgen.h>
+#include <sys/param.h>
+#include <pwd.h>
 
 #define FILE_SEPARATOR "/"
 
@@ -121,17 +105,6 @@ mrb_file_s_rename(mrb_state *mrb, mrb_value obj)
 static mrb_value
 mrb_file_dirname(mrb_state *mrb, mrb_value klass)
 {
-  #if defined(_WIN32) || defined(_WIN64)
-  char dname[_MAX_DIR], vname[_MAX_DRIVE];
-  char buffer[_MAX_DRIVE + _MAX_DIR];
-  char *path;
-  mrb_value s;
-  mrb_get_args(mrb, "S", &s);
-  path = mrb_str_to_cstr(mrb, s);
-  _splitpath((const char*)path, vname, dname, NULL, NULL);
-  snprintf(buffer, _MAX_DRIVE + _MAX_DIR, "%s%s", vname, dname);
-  return mrb_str_new_cstr(mrb, buffer);
-  #else
   char *dname, *path;
   mrb_value s;
   mrb_get_args(mrb, "S", &s);
@@ -140,25 +113,12 @@ mrb_file_dirname(mrb_state *mrb, mrb_value klass)
   if ((dname = dirname(path)) == NULL) {
     mrb_sys_fail(mrb, "dirname");
   }
-  #endif
   return mrb_str_new_cstr(mrb, dname);
 }
 
 static mrb_value
 mrb_file_basename(mrb_state *mrb, mrb_value klass)
 {
-  #if defined(_WIN32) || defined(_WIN64)
-  char bname[_MAX_DIR];
-  char extname[_MAX_EXT];
-  char *path;
-  char buffer[_MAX_DIR + _MAX_EXT];
-  mrb_value s;
-  mrb_get_args(mrb, "S", &s);
-  path = mrb_str_to_cstr(mrb, s);
-  _splitpath((const char*)path, NULL, NULL, bname, extname);
-  snprintf(buffer, _MAX_DIR + _MAX_EXT, "%s%s", bname, extname);
-  return mrb_str_new_cstr(mrb, buffer);
-  #else
   char *bname, *path;
   mrb_value s;
   mrb_get_args(mrb, "S", &s);
@@ -167,7 +127,6 @@ mrb_file_basename(mrb_state *mrb, mrb_value klass)
     mrb_sys_fail(mrb, "basename");
   }
   return mrb_str_new_cstr(mrb, bname);
-  #endif
 }
 
 static mrb_value
@@ -214,36 +173,7 @@ mrb_file_is_absolute_path(const char *path)
 static mrb_value
 mrb_file__gethome(mrb_state *mrb, mrb_value klass)
 {
-#ifndef _WIN32
-  mrb_value username;
-  int argc;
-  char *home;
-
-  argc = mrb_get_args(mrb, "|S", &username);
-  if (argc == 0) {
-    home = getenv("HOME");
-    if (home == NULL) {
-      return mrb_nil_value();
-    }
-    if (!mrb_file_is_absolute_path(home)) {
-      mrb_raise(mrb, E_ARGUMENT_ERROR, "non-absolute home");
-    }
-  } else {
-    const char *cuser = mrb_str_to_cstr(mrb, username);
-    struct passwd *pwd = getpwnam(cuser);
-    if (pwd == NULL) {
-      return mrb_nil_value();
-    }
-    home = pwd->pw_dir;
-    if (!mrb_file_is_absolute_path(home)) {
-      mrb_raisef(mrb, E_ARGUMENT_ERROR, "non-absolute home of ~%S", username);
-    }
-  }
-  return mrb_str_new_cstr(mrb, home);
-#else
-
   return mrb_nil_value();
-#endif
 }
 
 #ifndef _WIN32

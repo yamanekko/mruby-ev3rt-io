@@ -27,12 +27,6 @@ assert("FileTest.file?") do
   assert_equal true,  FileTest.file?("/bin/sh")
 end
 
-assert("FileTest.pipe?") do
-  io = IO.popen("ls")
-  assert_equal true,  FileTest.pipe?(io)
-  assert_equal false, FileTest.pipe?("/tmp")
-end
-
 assert('FileTest.size') do
   assert_equal FileTest.size($mrbtest_io_rfname), $mrbtest_io_msg.size
   assert_equal FileTest.size($mrbtest_io_wfname), 0
@@ -58,14 +52,6 @@ assert("FileTest.size?") do
   end
 
   fp1.closed? && fp2.closed?
-end
-
-assert("FileTest.socket?") do
-  assert_true FileTest.socket?($mrbtest_io_socketname)
-end
-
-assert("FileTest.symlink?") do
-  assert_true FileTest.symlink?($mrbtest_io_symlinkname)
 end
 
 assert("FileTest.zero?") do

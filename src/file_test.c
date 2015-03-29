@@ -8,27 +8,18 @@
 #include "mruby/string.h"
 #include "mruby/ext/io.h"
 
-#if MRUBY_RELEASE_NO < 10000
-#include "error.h"
-#else
 #include "mruby/error.h"
-#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#if defined(_WIN32) || defined(_WIN64)
-  #define LSTAT stat
-  #include <winsock.h>
-#else
-  #define LSTAT lstat
-  #include <sys/file.h>
-  #include <sys/param.h>
-  #include <sys/wait.h>
-  #include <libgen.h>
-  #include <pwd.h>
-  #include <unistd.h>
-#endif
+#define LSTAT lstat
+#include <sys/file.h>
+#include <sys/param.h>
+#include <sys/wait.h>
+#include <libgen.h>
+#include <pwd.h>
+#include <unistd.h>
 
 #include <fcntl.h>
 
@@ -118,112 +109,6 @@ mrb_filetest_s_directory_p(mrb_state *mrb, mrb_value klass)
   return mrb_false_value();
 }
 
-/*
- * call-seq:
- *   File.pipe?(file_name)   ->  true or false
- *
- * Returns <code>true</code> if the named file is a pipe.
- */
-
-mrb_value
-mrb_filetest_s_pipe_p(mrb_state *mrb, mrb_value klass)
-{
-#ifdef S_IFIFO
-#  ifndef S_ISFIFO
-#    define S_ISFIFO(m) (((m) & S_IFMT) == S_IFIFO)
-#  endif
-
-  struct stat st;
-  mrb_value obj;
-
-  mrb_get_args(mrb, "o", &obj);
-
-  if (mrb_stat(mrb, obj, &st) < 0)
-    return mrb_false_value();
-  if (S_ISFIFO(st.st_mode))
-    return mrb_true_value();
-
-#endif
-  return mrb_false_value();
-}
-
-/*
- * call-seq:
- *   File.symlink?(file_name)   ->  true or false
- *
- * Returns <code>true</code> if the named file is a symbolic link.
- */
-
-mrb_value
-mrb_filetest_s_symlink_p(mrb_state *mrb, mrb_value klass)
-{
-#ifndef S_ISLNK
-#  ifdef _S_ISLNK
-#    define S_ISLNK(m) _S_ISLNK(m)
-#  else
-#    ifdef _S_IFLNK
-#      define S_ISLNK(m) (((m) & S_IFMT) == _S_IFLNK)
-#    else
-#      ifdef S_IFLNK
-#        define S_ISLNK(m) (((m) & S_IFMT) == S_IFLNK)
-#      endif
-#    endif
-#  endif
-#endif
-
-#ifdef S_ISLNK
-  struct stat st;
-  mrb_value obj;
-
-  mrb_get_args(mrb, "o", &obj);
-
-  if (mrb_lstat(mrb, obj, &st) == -1)
-    return mrb_false_value();
-  if (S_ISLNK(st.st_mode))
-    return mrb_true_value();
-#endif
-
-  return mrb_false_value();
-}
-
-/*
- * call-seq:
- *   File.socket?(file_name)   ->  true or false
- *
- * Returns <code>true</code> if the named file is a socket.
- */
-
-mrb_value
-mrb_filetest_s_socket_p(mrb_state *mrb, mrb_value klass)
-{
-#ifndef S_ISSOCK
-#  ifdef _S_ISSOCK
-#    define S_ISSOCK(m) _S_ISSOCK(m)
-#  else
-#    ifdef _S_IFSOCK
-#      define S_ISSOCK(m) (((m) & S_IFMT) == _S_IFSOCK)
-#    else
-#      ifdef S_IFSOCK
-#        define S_ISSOCK(m) (((m) & S_IFMT) == S_IFSOCK)
-#      endif
-#    endif
-#  endif
-#endif
-
-#ifdef S_ISSOCK
-  struct stat st;
-  mrb_value obj;
-
-  mrb_get_args(mrb, "o", &obj);
-
-  if (mrb_stat(mrb, obj, &st) < 0)
-    return mrb_false_value();
-  if (S_ISSOCK(st.st_mode))
-    return mrb_true_value();
-#endif
-
-  return mrb_false_value();
-}
 
 /*
  * call-seq:
@@ -356,10 +241,7 @@ mrb_init_file_test(mrb_state *mrb)
   mrb_define_class_method(mrb, f, "exist?",     mrb_filetest_s_exist_p,     MRB_ARGS_REQ(1));
   mrb_define_class_method(mrb, f, "exists?",    mrb_filetest_s_exist_p,     MRB_ARGS_REQ(1));
   mrb_define_class_method(mrb, f, "file?",      mrb_filetest_s_file_p,      MRB_ARGS_REQ(1));
-  mrb_define_class_method(mrb, f, "pipe?",      mrb_filetest_s_pipe_p,      MRB_ARGS_REQ(1));
   mrb_define_class_method(mrb, f, "size",       mrb_filetest_s_size,        MRB_ARGS_REQ(1));
   mrb_define_class_method(mrb, f, "size?",      mrb_filetest_s_size_p,      MRB_ARGS_REQ(1));
-  mrb_define_class_method(mrb, f, "socket?",    mrb_filetest_s_socket_p,    MRB_ARGS_REQ(1));
-  mrb_define_class_method(mrb, f, "symlink?",   mrb_filetest_s_symlink_p,   MRB_ARGS_REQ(1));
   mrb_define_class_method(mrb, f, "zero?",      mrb_filetest_s_zero_p,      MRB_ARGS_REQ(1));
 }

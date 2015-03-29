@@ -26,22 +26,6 @@ class IO
     end
   end
 
-  def self.popen(command, mode = 'r', &block)
-    io = self._popen(command, mode)
-    return io unless block
-
-    begin
-      yield io
-    ensure
-      begin
-        io.close unless io.closed?
-      rescue IOError
-        # nothing
-      end
-    end
-  end
-
-
   def self.read(path, length=nil, offset=nil, opt=nil)
     if not opt.nil?        # 4 arguments
       offset ||= 0
@@ -339,34 +323,4 @@ class IO
   end
 
   alias_method :to_i, :fileno
-end
-
-STDIN  = IO.open(0, "r")
-STDOUT = IO.open(1, "w")
-STDERR = IO.open(2, "w")
-
-$stdin  = STDIN
-$stdout = STDOUT
-$stderr = STDERR
-
-module Kernel
-  def print(*args)
-    STDOUT.print(*args)
-  end
-
-  def puts(*args)
-    STDOUT.puts(*args)
-  end
-
-  def printf(*args)
-    STDOUT.printf(*args)
-  end
-
-  def gets(*args)
-    STDIN.gets(*args)
-  end
-
-  def getc(*args)
-    STDIN.getc(*args)
-  end
 end
