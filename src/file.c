@@ -102,18 +102,15 @@ mrb_file_s_rename(mrb_state *mrb, mrb_value obj)
   return mrb_fixnum_value(0);
 }
 
-static mrb_value
-mrb_file_dirname(mrb_state *mrb, mrb_value klass)
+static inline char *
+file_basename(char *file)
 {
-  char *dname, *path;
-  mrb_value s;
-  mrb_get_args(mrb, "S", &s);
-  path = mrb_str_to_cstr(mrb, s);
-
-  if ((dname = dirname(path)) == NULL) {
-    mrb_sys_fail(mrb, "dirname");
+  char *p = strrchr(file, '/');
+  if (p) {
+    return p + 1;
+  } else {
+    return file;
   }
-  return mrb_str_new_cstr(mrb, dname);
 }
 
 static mrb_value
@@ -123,7 +120,7 @@ mrb_file_basename(mrb_state *mrb, mrb_value klass)
   mrb_value s;
   mrb_get_args(mrb, "S", &s);
   path = mrb_str_to_cstr(mrb, s);
-  if ((bname = basename(path)) == NULL) {
+  if ((bname = file_basename(path)) == NULL) {
     mrb_sys_fail(mrb, "basename");
   }
   return mrb_str_new_cstr(mrb, bname);
