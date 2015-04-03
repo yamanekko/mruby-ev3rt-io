@@ -81,6 +81,10 @@ class File < IO
           expanded_path += "/"
         end
       else
+        work_dir = _getwd
+        unless work_dir
+          raise ArgumentError, "not supported current dir"
+        end
         expanded_path = concat_path(base_path, _getwd)
         expanded_path += "/" + path
       end
