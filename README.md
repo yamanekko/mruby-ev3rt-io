@@ -1,7 +1,16 @@
 mruby-ev3rt-io
 ========
 
-IO, File module for mruby on TOPPERS HRP2/EV3RT
+IO, File module for mruby on TOPPERS/EV3RT.
+This library is based on iij/mruby-io.
+
+## How to build
+
+In your build_config.rb, add:
+
+```
+conf.gem github: => "yamanekko/mruby-ev3rt-io"
+```
 
 
 ## Implemented methods
@@ -14,16 +23,16 @@ IO, File module for mruby on TOPPERS HRP2/EV3RT
 | IO.binread                 |          |      |
 | IO.binwrite                |          |      |
 | IO.copy_stream             |          |      |
-| IO.new, IO.for_fd, IO.open |  o  |     |
+| IO.new, IO.for_fd, IO.open |    o     |      |
 | IO.foreach                 |          |      |
 | IO.pipe                    |          |      |
-| IO.popen                   |    o     |      |
+| IO.popen                   |          |      |
 | IO.read                    |    o     |      |
-| IO.readlines               |          |      |
-| IO.select                  |    o     |      |
+| IO.readlines               |    o     |      |
+| IO.select                  |          |      |
 | IO.sysopen                 |    o     |      |
 | IO.try_convert             |          |      |
-| IO.write                   |          |      |
+| IO.write                   |    o     |      |
 | IO#<<                      |          |      |
 | IO#advise                  |          |      |
 | IO#autoclose=              |          |      |
@@ -33,9 +42,9 @@ IO, File module for mruby on TOPPERS HRP2/EV3RT
 | IO#bytes                   |          | obsolete |
 | IO#chars                   |          | obsolete |
 | IO#clone, IO#dup           |          |      |
-| IO#close                   |    o     |      |
-| IO#close_on_exec=          |    o     |      |
-| IO#close_on_exec?          |    o     |      |
+| IO#close                   |          |      |
+| IO#close_on_exec=          |          |      |
+| IO#close_on_exec?          |          |      |
 | IO#close_read              |          |      |
 | IO#close_write             |          |      |
 | IO#closed?                 |    o     |      |
@@ -60,7 +69,7 @@ IO, File module for mruby on TOPPERS HRP2/EV3RT
 | IO#lineno                  |          |      |
 | IO#lineno=                 |          |      |
 | IO#lines                   |          | obsolete |
-| IO#pid                     |    o     |      |
+| IO#pid                     |          |      |
 | IO#pos, IO#tell            |    o     |      |
 | IO#pos=                    |    o     |      |
 | IO#print                   |    o     |      |
@@ -105,7 +114,7 @@ IO, File module for mruby on TOPPERS HRP2/EV3RT
 | File.ctime                  |          |      |
 | File.delete, File.unlink    |   o      |      |
 | File.directory?             |   o      | FileTest |
-| File.dirname                |   o      |      |
+| File.dirname                |          |      |
 | File.executable?            |          | FileTest |
 | File.executable_real?       |          | FileTest |
 | File.exist?, exists?        |   o      | FileTest |
@@ -125,25 +134,25 @@ IO, File module for mruby on TOPPERS HRP2/EV3RT
 | File.new, File.open         |   o      |      |
 | File.owned?                 |          | FileTest |
 | File.path                   |          |      |
-| File.pipe?                  |   o      | FileTest |
+| File.pipe?                  |          | FileTest |
 | File.readable?              |          | FileTest |
 | File.readable_real?         |          | FileTest |
 | File.readlink               |          |      |
 | File.realdirpath            |          |      |
-| File.realpath               |   o      |      |
+| File.realpath               |          |      |
 | File.rename                 |   o      |      |
 | File.setgid?                |          | FileTest |
 | File.setuid?                |          | FileTest |
 | File.size                   |   o      |      |
 | File.size?                  |   o      | FileTest |
-| File.socket?                |   o      | FileTest |
+| File.socket?                |          | FileTest |
 | File.split                  |          |      |
 | File.stat                   |          |      |
 | File.sticky?                |          | FileTest |
 | File.symlink                |          |      |
-| File.symlink?               |   o      | FileTest |
+| File.symlink?               |          | FileTest |
 | File.truncate               |          |      |
-| File.umask                  |   o      |      |
+| File.umask                  |          |      |
 | File.utime                  |          |      |
 | File.world_readable?        |          |      |
 | File.world_writable?        |          |      |
@@ -162,8 +171,18 @@ IO, File module for mruby on TOPPERS HRP2/EV3RT
 | File#truncate               |          |      |
 
 
+## Author
+
+Team Yamanekko (https://github.com/yamanekko)
+
+
 ## License
 
+MIT LICENSE.
+
+Original Copyright:
+
+```
 Copyright (c) 2013 Internet Initiative Japan Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a 
@@ -183,3 +202,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
 DEALINGS IN THE SOFTWARE.
+```
