@@ -44,7 +44,8 @@ mrb_stat(mrb_state *mrb, mrb_value obj, FILINFO *fno)
     mrb_raise(mrb, E_ARGUMENT_ERROR, "only supported String");
   }
   const char *path = mrb_str_to_cstr(mrb, obj);
-  result = f_stat(path, fno);
+  //result = f_stat(path, fno);
+  result = FR_INT_ERR;
   if (result == FR_OK) {
     return 0;
   } else {

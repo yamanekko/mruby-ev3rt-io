@@ -48,7 +48,17 @@
 
 #define STAT(p, s)        stat(p, s)
 
+FRESULT
+f_unlink(const char *path)
+{
+  return FR_INT_ERR;
+}
 
+FRESULT
+f_rename(const char *old, const char *new)
+{
+  return FR_INT_ERR;
+}
 
 mrb_value
 mrb_file_s_umask(mrb_state *mrb, mrb_value klass)
@@ -75,7 +85,6 @@ mrb_file_s_unlink(mrb_state *mrb, mrb_value obj)
   }
   return mrb_fixnum_value(argc);
 }
-
 static mrb_value
 mrb_file_s_rename(mrb_state *mrb, mrb_value obj)
 {
