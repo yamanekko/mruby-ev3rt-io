@@ -2,14 +2,14 @@ mruby-ev3rt-io
 ========
 
 IO, File module for mruby on TOPPERS/EV3RT.
-This library is based on iij/mruby-io.
+This library is ported version of iij/mruby-io.
 
 ## How to build
 
 In your build_config.rb, add:
 
 ```
-conf.gem github: => "yamanekko/mruby-ev3rt-io"
+conf.gem github: "yamanekko/mruby-ev3rt-io"
 ```
 
 
