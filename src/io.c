@@ -15,6 +15,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 
 #include <sys/wait.h>
 #include <unistd.h>
@@ -24,11 +25,6 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
-
-struct timeval {
-  time_t tv_sec;
-  suseconds_t tv_usec;
-};
 
 static int mrb_io_modestr_to_flags(mrb_state *mrb, const char *modestr);
 static int mrb_io_flags_to_modenum(mrb_state *mrb, int flags);
